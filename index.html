@@ -1038,11 +1038,11 @@
 
     BlogCore.renderPost = async function(filename) {
         const app = this.getAppContainer();
-        app.innerHTML = `<div class="status-message"><p>正在加载文章...</p><p><span class="loading-pulse"></span></p></div>`;
+        app.innerHTML = `<div class="status-message"><p>正在加载...</p><p><span class="loading-pulse"></span></p></div>`;
         
         try {
-            // 【终极修正】使用相对路径 ./ 确保不丢失 /Blog/ 子目录
-            const correctedPath = './posts/' + filename; 
+            // 【绝对路径修正】直接指向 /Blog/ 仓库目录
+            const correctedPath = '/Blog/posts/' + filename; 
             
             const response = await fetch(correctedPath);
             if (!response.ok) throw new Error(`找不到文件: ${correctedPath}`);
@@ -1059,10 +1059,10 @@
 
             const postTitle = parsedData.meta.title || filename.replace(/\.md$/i, '').replace(/-/g, ' ');
             const postAuthor = parsedData.meta.author || '管理员';
-            const postDate = parsedData.meta.date || '2026-04-28';
+            const postDate = parsedData.meta.date || '2026';
 
             app.innerHTML = `
-                <button class="back-button" onclick="window.location.href='?'">返回首页</button>
+                <button class="back-button" onclick="window.location.href='?'">← 返回首页</button>
                 <article>
                     <div class="post-meta-card">
                         <h1>${this.escapeHTML(postTitle)}</h1>
@@ -1074,8 +1074,9 @@
                     <div class="post-content-card">${renderedContent}</div>
                 </article>
             `;
+            window.scrollTo(0, 0);
         } catch (error) {
-            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;">${error.message}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
+            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;font-size:0.8rem;">尝试路径: ${correctedPath}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
         }
     };
 })();
