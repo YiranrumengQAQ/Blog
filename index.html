@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的个人博客</title>
+
+    <!-- Marked.js CDN：用于将 Markdown 正文渲染为富文本 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
+    </script>
+
+    <style>
+        /* ==========================================
+               全局基础样式
+               ========================================== */
+        :root {
+            --bg-gradient-start: #e8eaf0;
+            --bg-gradient-mid: #eef0f5;
+            --bg-gradient-end: #e3e5ec;
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-bg-hover: rgba(255, 255, 255, 0.72);
+            --glass-bg-card: rgba(255, 255, 255, 0.60);
+            --glass-border: rgba(255, 255, 255, 0.50);
+            --glass-border-strong: rgba(255, 255, 255, 0.65);
+            --glass-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.05),
+                0 1px 3px rgba(0, 0, 0, 0.04);
+            --glass-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.07),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+            --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.09),
+                0 4px 16px rgba(0, 0, 0, 0.05);
+            --text-primary: #1a1c20;
+            --text-secondary: #5f6368;
+            --text-tertiary: #80868b;
+            --accent: #1a73e8;
+            --accent-hover: #1557b0;
+            --accent-subtle: #e8f0fe;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Consolas', monospace;
+            --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --max-content-width: 720px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 24px 16px 60px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-primary);
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+            /*
+                柔和渐变背景 —— 为玻璃拟态提供“透明感”的视觉依据
+            */
+            background:
+                radial-gradient(ellipse 70% 50% at 20% 15%, rgba(180, 200, 240, 0.50) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 45% at 78% 25%, rgba(210, 190, 230, 0.45) 0%, transparent 58%),
+                radial-gradient(ellipse 55% 40% at 50% 70%, rgba(200, 210, 235, 0.40) 0%, transparent 55%),
+                radial-gradient(ellipse 65% 50% at 85% 75%, rgba(220, 200, 225, 0.38) 0%, transparent 58%),
+                linear-gradient(175deg,
+                    #e9ecf2 0%,
+                    #edf0f6 18%,
+                    #f0f2f7 36%,
+                    #eceff5 54%,
+                    #e8ebf2 72%,
+                    #eaedf4 100%);
+            background-attachment: fixed;
+        }
+
+        /* 装饰性光斑层 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(circle 280px at 22% 18%, rgba(180, 195, 235, 0.32) 0%, transparent 70%),
+                radial-gradient(circle 240px at 75% 22%, rgba(200, 185, 225, 0.28) 0%, transparent 68%),
+                radial-gradient(circle 300px at 48% 62%, rgba(190, 205, 230, 0.26) 0%, transparent 72%),
+                radial-gradient(circle 260px at 82% 72%, rgba(210, 195, 220, 0.25) 0%, transparent 68%);
+            filter: blur(30px);
+        }
+
+        /* ==========================================
+               站点头部
+               ========================================== */
+        .site-header {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: var(--max-content-width);
+            margin: 0 auto 28px;
+            padding: 22px 28px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(170%);
+            -webkit-backdrop-filter: blur(22px) saturate(170%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--glass-shadow-sm);
+            text-align: center;
+            transition: box-shadow var(--transition-smooth);
+        }
+        .site-header:hover {
+            box-shadow: var(--glass-shadow-md);
+        }
+        .site-header .site-title {
+            font-size: 1.65rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .site-header .site-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        /* ==========================================
+               主内容区
+               ========================================== */
+        #app {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: var(--max-content-width);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* 玻璃卡片通用样式 */
+        .glass-card {
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(20px) saturate(165%);
+            -webkit-backdrop-filter: blur(20px) saturate(165%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--glass-shadow-sm);
+            padding: 22px 26px;
+            transition: all var(--transition-smooth);
+            position: relative;
+        }
+        .glass-card:hover {
+            box-shadow: var(--glass-shadow-md);
+            border-color: var(--glass-border-strong);
+        }
+
+        /* 列表页标题区 */
+        .list-header {
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(20px) saturate(165%);
+            -webkit-backdrop-filter: blur(20px) saturate(165%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--glass-shadow-sm);
+            padding: 18px 26px;
+            text-align: center;
+        }
+        .list-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .list-header .page-indicator {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+            font-weight: 400;
+        }
+
+        /* 文章列表 */
+        #article-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0;
+            margin: 0;
+        }
+        #article-list li {
+            margin: 0;
+            padding: 0;
+        }
+        #article-list li a {
+            display: block;
+            padding: 16px 22px;
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1rem;
+            letter-spacing: -0.005em;
+            transition: all var(--transition-fast);
+            box-shadow: var(--glass-shadow-sm);
+            position: relative;
+        }
+        #article-list li a::after {
+            content: '';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            opacity: 0;
+            transition: all var(--transition-fast);
+            background: currentColor;
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+            mask-size: contain;
+            -webkit-mask-size: contain;
+            mask-repeat: no-repeat;
+            -webkit-mask-repeat: no-repeat;
+            color: var(--text-tertiary);
+        }
+        #article-list li a:hover {
+            background: var(--glass-bg-hover);
+            border-color: var(--glass-border-strong);
+            box-shadow: var(--glass-shadow-md);
+            transform: translateY(-1px);
+            padding-right: 44px;
+            color: var(--accent);
+        }
+        #article-list li a:hover::after {
+            opacity: 1;
+            right: 18px;
+            color: var(--accent);
+        }
+
+        /* 分页区域 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 6px 0;
+        }
+        .pagination button {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            padding: 10px 22px;
+            border-radius: 28px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            box-shadow: var(--glass-shadow-sm);
+            white-space: nowrap;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        .pagination button:hover {
+            background: var(--glass-bg-hover);
+            border-color: var(--glass-border-strong);
+            box-shadow: var(--glass-shadow-md);
+            transform: translateY(-1px);
+            color: var(--accent);
+        }
+        .pagination button:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+            box-shadow: var(--glass-shadow-sm);
+        }
+        .pagination button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: 28px;
+        }
+        .pagination .page-info {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            padding: 8px 6px;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* ==========================================
+               文章详情页
+               ========================================== */
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            padding: 9px 18px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            box-shadow: var(--glass-shadow-sm);
+            text-decoration: none;
+            width: fit-content;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            margin-bottom: 2px;
+        }
+        .back-button:hover {
+            background: var(--glass-bg-hover);
+            border-color: var(--glass-border-strong);
+            box-shadow: var(--glass-shadow-md);
+            color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .back-button:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+        .back-button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: 24px;
+        }
+
+        /* 文章元信息卡片 */
+        .post-meta-card {
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(20px) saturate(165%);
+            -webkit-backdrop-filter: blur(20px) saturate(165%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--glass-shadow-sm);
+            padding: 24px 28px 20px;
+            transition: box-shadow var(--transition-smooth);
+        }
+        .post-meta-card:hover {
+            box-shadow: var(--glass-shadow-md);
+        }
+        .post-meta-card h1 {
+            font-size: 1.55rem;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .post-meta-card .meta-line {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: baseline;
+        }
+        .post-meta-card .meta-line span {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .post-meta-card .meta-label {
+            color: var(--text-tertiary);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+        }
+
+        /* 文章正文卡片 */
+        .post-content-card {
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(20px) saturate(165%);
+            -webkit-backdrop-filter: blur(20px) saturate(165%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--glass-shadow-sm);
+            padding: 26px 28px 30px;
+            transition: box-shadow var(--transition-smooth);
+            /* Markdown 渲染后的内容样式 */
+            line-height: 1.75;
+            font-size: 1rem;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        .post-content-card:hover {
+            box-shadow: var(--glass-shadow-md);
+        }
+
+        /* Markdown 内容排版 */
+        .post-content-card h1,
+        .post-content-card h2,
+        .post-content-card h3,
+        .post-content-card h4,
+        .post-content-card h5,
+        .post-content-card h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.55em;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+        .post-content-card h1:first-child,
+        .post-content-card h2:first-child,
+        .post-content-card h3:first-child {
+            margin-top: 0;
+        }
+        .post-content-card h1 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding-bottom: 0.35em;
+        }
+        .post-content-card h2 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding-bottom: 0.3em;
+        }
+        .post-content-card h3 {
+            font-size: 1.15rem;
+        }
+        .post-content-card p {
+            margin-bottom: 1em;
+            line-height: 1.75;
+        }
+        .post-content-card p:last-child {
+            margin-bottom: 0;
+        }
+        .post-content-card ul,
+        .post-content-card ol {
+            margin-bottom: 1em;
+            padding-left: 1.6em;
+        }
+        .post-content-card li {
+            margin-bottom: 0.35em;
+            line-height: 1.7;
+        }
+        .post-content-card blockquote {
+            margin: 1.2em 0;
+            padding: 14px 20px;
+            border-left: 3px solid var(--accent);
+            background: rgba(26, 115, 232, 0.04);
+            border-radius: 0 8px 8px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+            letter-spacing: 0.015em;
+        }
+        .post-content-card blockquote p {
+            margin-bottom: 0;
+        }
+        .post-content-card code {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 7px;
+            border-radius: 5px;
+            letter-spacing: 0;
+            color: #1a1c20;
+        }
+        .post-content-card pre {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 18px 20px;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            line-height: 1.6;
+            margin: 1.2em 0;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            letter-spacing: 0;
+        }
+        .post-content-card pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+        .post-content-card hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            margin: 1.8em 0;
+        }
+        .post-content-card a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color var(--transition-fast);
+        }
+        .post-content-card a:hover {
+            border-bottom-color: var(--accent);
+        }
+        .post-content-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-sm);
+            margin: 1em 0;
+        }
+        .post-content-card strong {
+            font-weight: 600;
+            color: #111318;
+        }
+
+        /* ==========================================
+               加载与错误状态
+               ========================================== */
+        .status-message {
+            text-align: center;
+            padding: 36px 24px;
+            background: var(--glass-bg-card);
+            backdrop-filter: blur(20px) saturate(165%);
+            -webkit-backdrop-filter: blur(20px) saturate(165%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--glass-shadow-sm);
+        }
+        .status-message p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+            letter-spacing: 0.01em;
+        }
+        .status-message .status-icon {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--text-tertiary);
+            letter-spacing: 0;
+        }
+
+        /* 脉冲加载指示器 */
+        .loading-pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.35;
+                transform: scale(0.85);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* ==========================================
+               站点底部
+               ========================================== */
+        .site-footer {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: var(--max-content-width);
+            margin: 36px auto 0;
+            text-align: center;
+            padding: 14px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px) saturate(155%);
+            -webkit-backdrop-filter: blur(18px) saturate(155%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--glass-shadow-sm);
+            font-size: 0.82rem;
+            color: var(--text-tertiary);
+            letter-spacing: 0.02em;
+            transition: box-shadow var(--transition-smooth);
+        }
+        .site-footer:hover {
+            box-shadow: var(--glass-shadow-md);
+        }
+
+        /* ==========================================
+               响应式调整
+               ========================================== */
+        @media (max-width: 600px) {
+            body {
+                padding: 14px 10px 40px;
+            }
+            .site-header {
+                padding: 16px 18px 14px;
+                border-radius: var(--radius-md);
+                margin-bottom: 18px;
+            }
+            .site-header .site-title {
+                font-size: 1.35rem;
+            }
+            .site-header .site-subtitle {
+                font-size: 0.85rem;
+            }
+            .glass-card,
+            .post-meta-card,
+            .post-content-card,
+            .list-header,
+            .status-message {
+                padding: 16px 16px;
+                border-radius: var(--radius-sm);
+            }
+            #article-list li a {
+                padding: 14px 16px;
+                font-size: 0.95rem;
+            }
+            #article-list li a::after {
+                right: 14px;
+                width: 16px;
+                height: 16px;
+            }
+            #article-list li a:hover {
+                padding-right: 38px;
+            }
+            #article-list li a:hover::after {
+                right: 12px;
+            }
+            .pagination button {
+                padding: 8px 16px;
+                font-size: 0.82rem;
+                border-radius: 22px;
+            }
+            .post-content-card {
+                font-size: 0.95rem;
+                padding: 18px 16px 22px;
+            }
+            .post-content-card h1 {
+                font-size: 1.3rem;
+            }
+            .post-content-card h2 {
+                font-size: 1.15rem;
+            }
+            .post-content-card h3 {
+                font-size: 1.05rem;
+            }
+            .post-meta-card h1 {
+                font-size: 1.3rem;
+            }
+            .post-meta-card .meta-line {
+                font-size: 0.8rem;
+                gap: 10px;
+            }
+            .back-button {
+                font-size: 0.82rem;
+                padding: 8px 15px;
+                border-radius: 20px;
+            }
+            .site-footer {
+                font-size: 0.75rem;
+                padding: 10px 14px;
+                border-radius: var(--radius-md);
+                margin-top: 24px;
+            }
+            .list-header h2 {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            body {
+                padding: 8px 6px 30px;
+            }
+            .site-header {
+                padding: 14px 12px 12px;
+            }
+            .post-content-card {
+                padding: 14px 12px 18px;
+            }
+            #article-list li a {
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+            .pagination {
+                gap: 8px;
+            }
+            .pagination button {
+                padding: 7px 13px;
+                font-size: 0.78rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================
+    站点头部：玻璃拟态卡片
+    ========================================== -->
+    <header class="site-header">
+        <div class="site-title">我的小站</div>
+        <div class="site-subtitle">欢迎来到我的个人博客</div>
+    </header>
+
+    <!-- ==========================================
+    主内容区：由 core.js 动态注入
+    ========================================== -->
+    <main id="app">
+        <div class="status-message">
+            <span class="status-icon">--</span>
+            <p>正在加载博客...</p>
+            <p style="margin-top:6px;"><span class="loading-pulse"></span></p>
+        </div>
+    </main>
+
+    <!-- ==========================================
+    站点底部
+    ========================================== -->
+    <footer class="site-footer">
+        Powered by My Kernel &middot; 2026
+    </footer>
+
+    <!-- ==========================================
+    博客核心引擎 (内嵌 core.js 逻辑)
+    ========================================== -->
+    <script>
+        (function() {
+            // ==========================================
+            // 博客核心引擎 (Blog Kernel)
+            // ==========================================
+            const BlogCore = {
+                config: {
+                    postsPerPage: 5, // 每页显示文章数，可自行调整
+                    postsPath: './posts/', // Markdown 文件存放的文件夹
+                    listFile: './posts.json' // 文章目录清单文件
+                },
+
+                state: {
+                    allPosts: [], // 存放所有文章清单
+                    currentPage: 1
+                },
+
+                // 获取 DOM 容器
+                getAppContainer() {
+                    return document.getElementById('app');
+                },
+
+                // 1. 初始化博客
+                async init() {
+                    const app = this.getAppContainer();
+                    try {
+                        // 获取文章总清单
+                        const response = await fetch(this.config.listFile);
+                        if (!response.ok) {
+                            throw new Error(
+                                `无法加载文章清单 (HTTP ${response.status})，请确认 posts.json 文件已创建并部署。`
+                                );
+                        }
+                        this.state.allPosts = await response.json();
+
+                        // 简单的路由：检查网址后面有没有带 ?post=xxx.md
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const postName = urlParams.get('post');
+
+                        if (postName) {
+                            await this.renderPost(postName);
+                        } else {
+                            this.renderList(this.state.currentPage);
+                        }
+                    } catch (error) {
+                        console.error('博客初始化失败:', error);
+                        app.innerHTML = `
+                            <div class="status-message">
+                                <span class="status-icon">--</span>
+                                <p><strong>博客加载失败</strong></p>
+                                <p style="font-size:0.85rem;color:var(--text-tertiary);margin-top:4px;">
+                                    请确认以下文件已正确创建：<br>
+                                    <code>posts.json</code>（文章目录清单）<br>
+                                    <code>posts/</code>（存放 .md 文章的文件夹）
+                                </p>
+                                <p style="font-size:0.8rem;color:var(--text-tertiary);margin-top:8px;">
+                                    提示：部署到 GitHub Pages 后即可正常使用。
+                                </p>
+                            </div>
+                        `;
+                    }
+                },
+
+                // 2. 渲染文章列表和分页
+                renderList(page) {
+                    const app = this.getAppContainer();
+                    this.state.currentPage = page;
+                    const totalPosts = this.state.allPosts.length;
+                    const totalPages = Math.ceil(totalPosts / this.config.postsPerPage);
+
+                    // 计算当前页要截取的文章范围
+                    const startIndex = (page - 1) * this.config.postsPerPage;
+                    const endIndex = startIndex + this.config.postsPerPage;
+                    const currentPosts = this.state.allPosts.slice(startIndex, endIndex);
+
+                    // 美化文件名：去掉 .md，连字符转空格，首字母大写
+                    const beautifyFilename = (filename) => {
+                        return filename
+                            .replace(/\.md$/i, '')
+                            .replace(/-/g, ' ')
+                            .replace(/\b\w/g, c => c.toUpperCase());
+                    };
+
+                    // 列表头部
+                    let html = `
+                        <div class="list-header">
+                            <h2>文章列表</h2>
+                            <p class="page-indicator">第 ${page} / ${totalPages} 页 &middot; 共 ${totalPosts} 篇</p>
+                        </div>
+                        <ul id="article-list">
+                    `;
+
+                    if (currentPosts.length === 0) {
+                        html += `
+                            <li style="text-align:center;padding:20px;color:var(--text-tertiary);">
+                                暂无文章，请先在 posts.json 中添加文章条目。
+                            </li>
+                        `;
+                    } else {
+                        currentPosts.forEach(post => {
+                            const displayName = beautifyFilename(post.file);
+                            html +=
+                                `<li><a href="?post=${encodeURIComponent(post.file)}">${this.escapeHTML(displayName)}</a></li>`;
+                        });
+                    }
+                    html += `</ul>`;
+
+                    // 分页按钮逻辑
+                    let paginationHtml = `<div class="pagination">`;
+                    if (page > 1) {
+                        paginationHtml +=
+                            `<button onclick="BlogCore.renderList(${page - 1})" aria-label="上一页">上一页</button>`;
+                    } else {
+                        paginationHtml +=
+                            `<button disabled style="opacity:0.4;cursor:not-allowed;pointer-events:none;" aria-label="上一页不可用">上一页</button>`;
+                    }
+                    paginationHtml +=
+                        `<span class="page-info">${page} / ${totalPages}</span>`;
+                    if (page < totalPages) {
+                        paginationHtml +=
+                            `<button onclick="BlogCore.renderList(${page + 1})" aria-label="下一页">下一页</button>`;
+                    } else {
+                        paginationHtml +=
+                            `<button disabled style="opacity:0.4;cursor:not-allowed;pointer-events:none;" aria-label="下一页不可用">下一页</button>`;
+                    }
+                    paginationHtml += `</div>`;
+
+                    app.innerHTML = html + paginationHtml;
+                },
+
+                // 3. 读取并解析单个 Markdown 文件
+                async renderPost(filename) {
+                    const app = this.getAppContainer();
+                    app.innerHTML = `
+                        <div class="status-message">
+                            <p>文章加载中...</p>
+                            <p style="margin-top:6px;"><span class="loading-pulse"></span></p>
+                        </div>
+                    `;
+                    try {
+                        const response = await fetch(this.config.postsPath + filename);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: 找不到文章 "${filename}"`);
+                        }
+                        const rawText = await response.text();
+
+                        // 解析 Markdown 中的个人信息 (Frontmatter) 和正文
+                        const parsedData = this.parseMarkdown(rawText);
+
+                        // 使用 marked.js 将 Markdown 正文渲染为 HTML
+                        let renderedContent = '';
+                        if (typeof marked !== 'undefined' && marked.parse) {
+                            try {
+                                renderedContent = marked.parse(parsedData.content);
+                            } catch (e) {
+                                console.warn('marked.js 渲染失败，回退到纯文本显示:', e);
+                                renderedContent = this.escapeHTML(parsedData.content);
+                            }
+                        } else {
+                            // 如果 marked.js 未加载，使用 pre 标签显示纯文本
+                            renderedContent = `<pre style="white-space:pre-wrap;font-family:inherit;">${this.escapeHTML(parsedData.content)}</pre>`;
+                        }
+
+                        const postTitle = parsedData.meta.title || filename.replace(/\.md$/i, '').replace(/-/g,
+                            ' ');
+                        const postAuthor = parsedData.meta.author || '神秘人';
+                        const postDate = parsedData.meta.date || '未知日期';
+
+                        // 构建文章详情页 HTML
+                        let html = `
+                            <button class="back-button" onclick="window.location.href='?'" aria-label="返回文章列表">
+                                <span style="display:inline-block;transform:rotate(180deg);font-size:1.1em;">&rarr;</span>
+                                返回首页
+                            </button>
+                            <article>
+                                <div class="post-meta-card">
+                                    <header>
+                                        <h1>${this.escapeHTML(postTitle)}</h1>
+                                        <div class="meta-line">
+                                            <span><span class="meta-label">作者</span> ${this.escapeHTML(postAuthor)}</span>
+                                            <span><span class="meta-label">日期</span> ${this.escapeHTML(postDate)}</span>
+                                        </div>
+                                    </header>
+                                </div>
+                                <div class="post-content-card">
+                                    ${renderedContent}
+                                </div>
+                            </article>
+                        `;
+                        app.innerHTML = html;
+
+                    } catch (error) {
+                        console.error('文章加载失败:', error);
+                        app.innerHTML = `
+                            <div class="status-message">
+                                <span class="status-icon">--</span>
+                                <p><strong>文章加载失败</strong></p>
+                                <p style="font-size:0.85rem;color:var(--text-tertiary);margin-top:4px;">${this.escapeHTML(error.message)}</p>
+                                <button class="back-button" onclick="window.location.href='?'" style="margin-top:14px;">
+                                    <span style="display:inline-block;transform:rotate(180deg);font-size:1.1em;">&rarr;</span>
+                                    返回首页
+                                </button>
+                            </div>
+                        `;
+                    }
+                },
+
+                // 4. 解析器：剥离文件顶部的头部信息 (YAML Frontmatter)
+                parseMarkdown(text) {
+                    const result = { meta: {}, content: text };
+                    // 正则表达式匹配以 --- 包裹的区域
+                    const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+
+                    if (match) {
+                        const metaRaw = match[1];
+                        result.content = match[2]; // 剩下的正文
+
+                        // 提取 key: value
+                        metaRaw.split('\n').forEach(line => {
+                            const parts = line.split(':');
+                            if (parts.length >= 2) {
+                                const key = parts[0].trim();
+                                const value = parts.slice(1).join(':').trim();
+                                result.meta[key] = value;
+                            }
+                        });
+                    }
+                    return result;
+                },
+
+                // 5. 工具函数：安全转义 HTML 特殊字符
+                escapeHTML(str) {
+                    const div = document.createElement('div');
+                    div.appendChild(document.createTextNode(str));
+                    return div.innerHTML;
+                }
+            };
+
+            // 将 BlogCore 暴露到全局作用域，以便分页按钮的 onclick 可以调用
+            window.BlogCore = BlogCore;
+
+            // 启动引擎
+            window.addEventListener('DOMContentLoaded', () => {
+                // 确保 marked.js 已加载（如果 CDN 较慢，稍等片刻）
+                const tryInit = () => {
+                    if (typeof marked !== 'undefined') {
+                        // 可选：配置 marked 选项
+                        marked.setOptions({
+                            breaks: true, // 支持 GFM 换行
+                            gfm: true, // 启用 GitHub Flavored Markdown
+                        });
+                    }
+                    BlogCore.init();
+                };
+
+                // 如果 marked 还未就绪，等待一小段时间
+                if (typeof marked === 'undefined') {
+                    // 监听 script 加载
+                    const markedScript = document.querySelector('script[src*="marked"]');
+                    if (markedScript && !markedScript.loaded) {
+                        markedScript.addEventListener('load', tryInit);
+                        // 设置超时兜底
+                        setTimeout(() => {
+                            if (typeof marked === 'undefined') {
+                                console.warn('marked.js 加载超时，将使用纯文本渲染。');
+                            }
+                            BlogCore.init();
+                        }, 4000);
+                    } else {
+                        tryInit();
+                    }
+                } else {
+                    tryInit();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
