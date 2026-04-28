@@ -1034,32 +1034,22 @@
 </html>
 <script>
 (function() {
-    // 检查 BlogCore 是否存在，防止报错
     if (typeof BlogCore === 'undefined') return;
 
-    // 劫持原有的 renderPost 函数
     BlogCore.renderPost = async function(filename) {
         const app = this.getAppContainer();
-        app.innerHTML = `
-            <div class="status-message">
-                <p>文章加载中...</p>
-                <p style="margin-top:6px;"><span class="loading-pulse"></span></p>
-            </div>
-        `;
+        app.innerHTML = `<div class="status-message"><p>正在加载文章...</p><p><span class="loading-pulse"></span></p></div>`;
         
         try {
-            // 补丁核心：强制修正路径为 Blog 仓库下的相对路径
-            const correctedPath = 'posts/' + filename; 
+            // 【终极修正】使用相对路径 ./ 确保不丢失 /Blog/ 子目录
+            const correctedPath = './posts/' + filename; 
             
             const response = await fetch(correctedPath);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: 找不到文件 ${correctedPath}`);
-            }
+            if (!response.ok) throw new Error(`找不到文件: ${correctedPath}`);
             
             const rawText = await response.text();
             const parsedData = this.parseMarkdown(rawText);
 
-            // 渲染正文
             let renderedContent = '';
             if (typeof marked !== 'undefined') {
                 renderedContent = marked.parse(parsedData.content);
@@ -1072,32 +1062,21 @@
             const postDate = parsedData.meta.date || '2026-04-28';
 
             app.innerHTML = `
-                <button class="back-button" onclick="window.location.href='?'">
-                    <span style="display:inline-block;transform:rotate(180deg);">&rarr;</span> 返回首页
-                </button>
+                <button class="back-button" onclick="window.location.href='?'">返回首页</button>
                 <article>
                     <div class="post-meta-card">
-                        <header>
-                            <h1>${this.escapeHTML(postTitle)}</h1>
-                            <div class="meta-line">
-                                <span><span class="meta-label">作者</span> ${this.escapeHTML(postAuthor)}</span>
-                                <span><span class="meta-label">日期</span> ${this.escapeHTML(postDate)}</span>
-                            </div>
-                        </header>
+                        <h1>${this.escapeHTML(postTitle)}</h1>
+                        <div class="meta-line">
+                            <span>作者: ${this.escapeHTML(postAuthor)}</span>
+                            <span>日期: ${this.escapeHTML(postDate)}</span>
+                        </div>
                     </div>
                     <div class="post-content-card">${renderedContent}</div>
                 </article>
             `;
         } catch (error) {
-            app.innerHTML = `
-                <div class="status-message">
-                    <p><strong>文章加载失败</strong></p>
-                    <p style="font-size:0.8rem;color:red;">${error.message}</p>
-                    <button class="back-button" onclick="window.location.href='?'" style="margin-top:10px;">返回首页</button>
-                </div>
-            `;
+            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;">${error.message}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
         }
     };
-    console.log("✅ 路径补丁已正确激活");
 })();
 </script>
