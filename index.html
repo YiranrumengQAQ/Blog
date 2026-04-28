@@ -1034,33 +1034,25 @@
 </html>
 <script>
 (function() {
-    // 确保 BlogCore 已经加载
     if (typeof BlogCore === 'undefined') return;
 
-    // 劫持初始化函数，确保它能读到根目录的 posts.json
-    const originalInit = BlogCore.init;
-    BlogCore.init = async function() {
-        // 强制指定根目录的清单文件
-        this.config.listFile = './posts.json'; 
-        this.config.postsPath = './posts/';
-        return originalInit.apply(this);
-    };
-
-    // 劫持文章渲染函数
     BlogCore.renderPost = async function(filename) {
         const app = this.getAppContainer();
-        app.innerHTML = `<div class="status-message"><p>正在加载文章...</p></div>`;
+        app.innerHTML = `<div class="status-message"><p>正在从云端调取文章...</p></div>`;
         
         try {
-            // 因为你的文件在根目录，直接使用 ./posts/ 即可
-            const correctedPath = './posts/' + filename; 
+            // 【硬核修正】直接使用你提供的 Raw 链接模板
+            // 这种方式不经过 GitHub Pages，直接去仓库拿货，永远不会报路径错误
+            const rawBase = "https://raw.githubusercontent.com/YiranrumengQAQ/Blog/main/posts/";
+            const correctedPath = rawBase + filename; 
             
             const response = await fetch(correctedPath);
-            if (!response.ok) throw new Error(`找不到文件: ${correctedPath}`);
+            if (!response.ok) throw new Error(`云端无法定位文件: ${filename}`);
             
             const rawText = await response.text();
             const parsedData = this.parseMarkdown(rawText);
 
+            // 渲染逻辑
             let renderedContent = '';
             if (typeof marked !== 'undefined') {
                 renderedContent = marked.parse(parsedData.content);
@@ -1069,7 +1061,7 @@
             }
 
             const postTitle = parsedData.meta.title || filename.replace(/\.md$/i, '').replace(/-/g, ' ');
-            const postAuthor = parsedData.meta.author || '管理员';
+            const postAuthor = parsedData.meta.author || 'YiranrumengQAQ';
             const postDate = parsedData.meta.date || '2026';
 
             app.innerHTML = `
@@ -1087,7 +1079,13 @@
             `;
             window.scrollTo(0, 0);
         } catch (error) {
-            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;">尝试路径: ${error.message}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
+            app.innerHTML = `
+                <div class="status-message">
+                    <p><strong>云端获取失败</strong></p>
+                    <p style="color:red; font-size:0.8rem;">${error.message}</p>
+                    <button class="back-button" onclick="window.location.href='?'">返回</button>
+                </div>
+            `;
         }
     };
 })();
