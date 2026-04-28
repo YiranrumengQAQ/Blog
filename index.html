@@ -1034,15 +1034,26 @@
 </html>
 <script>
 (function() {
+    // 确保 BlogCore 已经加载
     if (typeof BlogCore === 'undefined') return;
 
+    // 劫持初始化函数，确保它能读到根目录的 posts.json
+    const originalInit = BlogCore.init;
+    BlogCore.init = async function() {
+        // 强制指定根目录的清单文件
+        this.config.listFile = './posts.json'; 
+        this.config.postsPath = './posts/';
+        return originalInit.apply(this);
+    };
+
+    // 劫持文章渲染函数
     BlogCore.renderPost = async function(filename) {
         const app = this.getAppContainer();
-        app.innerHTML = `<div class="status-message"><p>正在加载...</p><p><span class="loading-pulse"></span></p></div>`;
+        app.innerHTML = `<div class="status-message"><p>正在加载文章...</p></div>`;
         
         try {
-            // 【绝对路径修正】直接指向 /Blog/ 仓库目录
-            const correctedPath = '/Blog/posts/' + filename; 
+            // 因为你的文件在根目录，直接使用 ./posts/ 即可
+            const correctedPath = './posts/' + filename; 
             
             const response = await fetch(correctedPath);
             if (!response.ok) throw new Error(`找不到文件: ${correctedPath}`);
@@ -1076,7 +1087,7 @@
             `;
             window.scrollTo(0, 0);
         } catch (error) {
-            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;font-size:0.8rem;">尝试路径: ${correctedPath}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
+            app.innerHTML = `<div class="status-message"><p>加载失败</p><p style="color:red;">尝试路径: ${error.message}</p><button class="back-button" onclick="window.location.href='?'">返回</button></div>`;
         }
     };
 })();
