@@ -1284,3 +1284,337 @@
     </script>
 </body>
 </html>
+<!-- ==========================================
+ 补丁：卡片式文章列表（带摘要、缩略图、日期）
+ 路径已统一为 GitHub Raw，并兼容已有搜索补丁
+ ========================================== -->
+<style>
+    /* 卡片列表相关样式 */
+    .article-list {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .article-card {
+        background: rgba(255, 255, 255, 0.60);
+        backdrop-filter: blur(20px) saturate(165%);
+        -webkit-backdrop-filter: blur(20px) saturate(165%);
+        border: 1px solid rgba(255, 255, 255, 0.50);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04);
+        display: flex;
+        align-items: stretch;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .article-card:hover {
+        box-shadow: 0 8px 32px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.04);
+        border-color: rgba(255,255,255,0.65);
+        transform: translateY(-1px);
+    }
+    .article-card-img {
+        flex-shrink: 0;
+        width: 160px;
+        min-height: 140px;
+        background: rgba(26,115,232,0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid rgba(0,0,0,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .article-card-img img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .article-card-img .img-placeholder {
+        color: rgba(0,0,0,0.12);
+        font-size: 2rem;
+        font-weight: 300;
+    }
+    .article-card-body {
+        flex: 1;
+        padding: 18px 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+    }
+    .article-card-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        color: #1a1c20;
+        margin-bottom: 6px;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .article-card-meta {
+        font-size: 0.82rem;
+        color: #5f6368;
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .article-card-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .article-card-meta .meta-label {
+        color: #80868b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 400;
+    }
+    .article-card-summary {
+        font-size: 0.88rem;
+        color: #3c4043;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        word-break: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .read-more-btn {
+        align-self: flex-start;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.50);
+        background: rgba(255,255,255,0.60);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
+        color: #1a1c20;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.18s cubic-bezier(0.4,0,0.2,1);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .read-more-btn:hover {
+        background: rgba(255,255,255,0.72);
+        border-color: rgba(255,255,255,0.65);
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        color: #1a73e8;
+        transform: translateY(-1px);
+    }
+    .read-more-btn:active {
+        transform: scale(0.96);
+    }
+    @media (max-width: 600px) {
+        .article-card {
+            flex-direction: column;
+        }
+        .article-card-img {
+            width: 100%;
+            height: 160px;
+            border-right: none;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        .article-card-body {
+            padding: 14px 16px;
+        }
+        .article-card-title {
+            font-size: 1.05rem;
+        }
+        .article-card-summary {
+            -webkit-line-clamp: 2;
+        }
+    }
+</style>
+
+<script>
+(function() {
+    if (typeof BlogCore === 'undefined') {
+        console.warn('BlogCore 未定义，卡片补丁将在内核就绪后注入');
+        return;
+    }
+
+    // 统一使用 GitHub Raw 基础路径
+    const RAW_BASE = 'https://raw.githubusercontent.com/YiranrumengQAQ/Blog/main/posts/';
+
+    // 工具：从 Markdown 提取第一张图片并转换为绝对路径
+    function extractFirstImage(markdownText) {
+        const mdImg = markdownText.match(/!\[.*?\]\((.*?)\)/);
+        if (mdImg) return resolveImageUrl(mdImg[1]);
+        const htmlImg = markdownText.match(/<img[^>]+src=["'](.*?)["']/i);
+        if (htmlImg) return resolveImageUrl(htmlImg[1]);
+        return null;
+    }
+
+    function resolveImageUrl(src) {
+        if (!src) return null;
+        if (/^https?:\/\//i.test(src) || src.startsWith('//')) return src;
+        if (src.startsWith('/')) return src;
+        // 相对路径：相对于 posts/ 文件夹
+        return RAW_BASE + src.replace(/^\.\//, '');
+    }
+
+    // 生成纯文本摘要（不依赖 marked）
+    function generateSummary(md) {
+        let text = md.replace(/^---[\s\S]*?---\n?/, '');
+        text = text.replace(/```[\s\S]*?```/g, '');
+        text = text.replace(/!\[.*?\]\(.*?\)/g, '');
+        text = text.replace(/\[([^\]]+)\]\(.*?\)/g, '$1');
+        text = text.replace(/^#{1,6}\s+/gm, '');
+        text = text.replace(/\*{1,3}([^*]+?)\*{1,3}/g, '$1');
+        text = text.replace(/_{1,3}([^_]+?)_{1,3}/g, '$1');
+        text = text.replace(/^\s*[-*+]\s+/gm, '');
+        text = text.replace(/`([^`]+)`/g, '$1');
+        text = text.replace(/\n{2,}/g, '\n').trim();
+        text = text.replace(/[ \t]+/g, ' ');
+        if (text.length > 150) {
+            text = text.substring(0, 150).replace(/\s+\S*$/, '') + '...';
+        }
+        return text || '（暂无正文内容）';
+    }
+
+    // 获取单篇文章的预览数据（优先使用 posts.json 中的元数据）
+    async function fetchArticlePreview(postEntry) {
+        const filename = postEntry.file;
+        const defaultResult = {
+            filename,
+            meta: {
+                title: postEntry.title || filename.replace(/\.md$/i, '').replace(/-/g, ' '),
+                date: postEntry.date || '',
+                author: postEntry.author || ''
+            },
+            summary: postEntry.summary || '暂无摘要',
+            thumbnail: postEntry.thumb || null
+        };
+
+        // 如果 posts.json 已经提供了完整信息，直接返回，避免额外请求
+        if (postEntry.title && postEntry.summary && postEntry.thumb) {
+            return defaultResult;
+        }
+
+        // 否则从 Raw 拉取正文补充
+        try {
+            const resp = await fetch(RAW_BASE + filename);
+            if (!resp.ok) throw new Error('网络错误');
+            const raw = await resp.text();
+            const parsed = BlogCore.parseMarkdown(raw);
+
+            const meta = {
+                title: postEntry.title || parsed.meta.title || defaultResult.meta.title,
+                date: postEntry.date || parsed.meta.date || '',
+                author: postEntry.author || parsed.meta.author || '神秘人'
+            };
+            const summary = postEntry.summary || generateSummary(parsed.content);
+            const thumb = postEntry.thumb || extractFirstImage(parsed.content);
+
+            return { filename, meta, summary, thumbnail: thumb };
+        } catch (e) {
+            console.warn(`预览加载失败 (${filename})，使用默认值`, e);
+            return defaultResult;
+        }
+    }
+
+    // 重写 renderList —— 卡片流
+    BlogCore.renderList = async function(page) {
+        const app = this.getAppContainer();
+        this.state.currentPage = page;
+        const totalPosts = this.state.allPosts.length;
+        const totalPages = Math.ceil(totalPosts / this.config.postsPerPage);
+        const start = (page - 1) * this.config.postsPerPage;
+        const end = start + this.config.postsPerPage;
+        const currentPosts = this.state.allPosts.slice(start, end);
+
+        // 加载提示
+        app.innerHTML = `
+            <div class="list-header">
+                <h2>文章列表</h2>
+                <p class="page-indicator">第 ${page} / ${totalPages} 页 · 共 ${totalPosts} 篇</p>
+            </div>
+            <div class="status-message">
+                <p>正在载入预览...</p>
+                <p style="margin-top:6px;"><span class="loading-pulse"></span></p>
+            </div>
+        `;
+
+        try {
+            const articles = await Promise.all(currentPosts.map(post => fetchArticlePreview(post)));
+
+            let listHtml = `
+                <div class="list-header">
+                    <h2>文章列表</h2>
+                    <p class="page-indicator">第 ${page} / ${totalPages} 页 · 共 ${totalPosts} 篇</p>
+                </div>
+                <ul class="article-list">
+            `;
+
+            if (articles.length === 0) {
+                listHtml += `<li class="status-message" style="list-style:none;"><p>暂无文章，请先在 posts.json 中添加条目。</p></li>`;
+            } else {
+                articles.forEach(article => {
+                    const title = article.meta.title;
+                    const date = article.meta.date || '未知日期';
+                    const author = article.meta.author || '神秘人';
+                    const summary = BlogCore.escapeHTML(article.summary);
+                    const img = article.thumbnail;
+                    const postLink = `?post=${encodeURIComponent(article.filename)}`;
+
+                    const imgHtml = img
+                        ? `<div class="article-card-img"><img src="${img}" alt="缩略图"></div>`
+                        : `<div class="article-card-img"><span class="img-placeholder">—</span></div>`;
+
+                    listHtml += `
+                        <li class="article-card">
+                            ${imgHtml}
+                            <div class="article-card-body">
+                                <div class="article-card-title">${BlogCore.escapeHTML(title)}</div>
+                                <div class="article-card-meta">
+                                    <span><span class="meta-label">日期</span> ${BlogCore.escapeHTML(date)}</span>
+                                    <span><span class="meta-label">作者</span> ${BlogCore.escapeHTML(author)}</span>
+                                </div>
+                                <div class="article-card-summary">${summary}</div>
+                                <a class="read-more-btn" href="${postLink}">阅读文章 <span style="font-size:1.1em;">→</span></a>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+            listHtml += `</ul>`;
+
+            // 分页按钮
+            let pag = `<div class="pagination">`;
+            if (page > 1) {
+                pag += `<button onclick="BlogCore.renderList(${page - 1})">上一页</button>`;
+            } else {
+                pag += `<button disabled style="opacity:0.4;cursor:not-allowed;">上一页</button>`;
+            }
+            pag += `<span class="page-info">${page} / ${totalPages}</span>`;
+            if (page < totalPages) {
+                pag += `<button onclick="BlogCore.renderList(${page + 1})">下一页</button>`;
+            } else {
+                pag += `<button disabled style="opacity:0.4;cursor:not-allowed;">下一页</button>`;
+            }
+            pag += `</div>`;
+
+            app.innerHTML = listHtml + pag;
+        } catch (err) {
+            console.error(err);
+            app.innerHTML = `<div class="status-message"><p>列表加载失败，请刷新重试。</p></div>`;
+        }
+    };
+
+    // 如果当前页面正是列表页（?post 不存在），立即用新方式渲染一次
+    if (!new URLSearchParams(window.location.search).get('post')) {
+        BlogCore.renderList(BlogCore.state.currentPage || 1);
+    }
+})();
+</script>
