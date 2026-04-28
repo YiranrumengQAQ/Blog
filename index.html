@@ -1090,3 +1090,197 @@
     };
 })();
 </script>
+    ...
+    <!-- 你之前的 renderPost 补丁 -->
+    <script>
+        (function() {
+            if (typeof BlogCore === 'undefined') return;
+            BlogCore.renderPost = async function(filename) { ... };
+        })();
+    </script>
+
+    <!-- 👇 粘贴以下搜索补丁 👇 -->
+    <script>
+        (function() {
+            if (typeof BlogCore === 'undefined') return;
+
+            // 获取文章列表（如果尚未加载则主动 fetch）
+            async function getPostList() {
+                if (BlogCore.state.allPosts.length > 0) {
+                    return BlogCore.state.allPosts;
+                }
+                try {
+                    const resp = await fetch(BlogCore.config.listFile);
+                    if (resp.ok) {
+                        const posts = await resp.json();
+                        BlogCore.state.allPosts = posts;
+                        return posts;
+                    }
+                } catch (e) {
+                    console.error('搜索无法获取文章列表', e);
+                }
+                return [];
+            }
+
+            // 防抖函数
+            function debounce(fn, delay = 300) {
+                let timer;
+                return function(...args) {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
+
+            // 生成摘要片段
+            function generateSnippet(content, query) {
+                const lower = content.toLowerCase();
+                const idx = lower.indexOf(query.toLowerCase());
+                if (idx === -1) return BlogCore.escapeHTML(content.substring(0, 100) + '...');
+                const start = Math.max(0, idx - 30);
+                const end = Math.min(content.length, idx + query.length + 50);
+                let snippet = content.substring(start, end);
+                if (start > 0) snippet = '...' + snippet;
+                if (end < content.length) snippet += '...';
+                return BlogCore.escapeHTML(snippet);
+            }
+
+            // 执行搜索
+            async function performSearch(query) {
+                const app = document.getElementById('app');
+                if (!app) return;
+                const trimmed = query.trim();
+                if (trimmed === '') {
+                    BlogCore.init();   // 恢复原始页面
+                    return;
+                }
+
+                app.innerHTML = '<div class="status-message"><p>正在搜索...</p></div>';
+
+                const posts = await getPostList();
+                if (posts.length === 0) {
+                    app.innerHTML = '<div class="status-message"><p>没有可搜索的文章</p></div>';
+                    return;
+                }
+
+                const results = [];
+                // 使用与你的 renderPost 补丁相同的 raw 链接，确保在 /Blog 子路径下也能拉取原文
+                const rawBase = "https://raw.githubusercontent.com/YiranrumengQAQ/Blog/main/posts/";
+
+                const searchPromises = posts.map(async (post) => {
+                    try {
+                        const resp = await fetch(rawBase + post.file);
+                        if (!resp.ok) return;
+                        const rawText = await resp.text();
+                        const parsed = BlogCore.parseMarkdown(rawText);
+                        const title = parsed.meta.title || post.file.replace(/\.md$/i, '').replace(/-/g, ' ');
+                        const content = parsed.content;
+                        const author = parsed.meta.author || '';
+                        const date = parsed.meta.date || '';
+
+                        const lowerQ = trimmed.toLowerCase();
+                        if (title.toLowerCase().includes(lowerQ) || content.toLowerCase().includes(lowerQ)) {
+                            results.push({
+                                file: post.file,
+                                title: title,
+                                author: author,
+                                date: date,
+                                snippet: generateSnippet(content, trimmed)
+                            });
+                        }
+                    } catch (e) {
+                        console.warn(`搜索时无法读取 ${post.file}`, e);
+                    }
+                });
+
+                await Promise.all(searchPromises);
+
+                if (results.length === 0) {
+                    app.innerHTML = `<div class="status-message"><p>未找到包含 “${BlogCore.escapeHTML(trimmed)}” 的文章</p></div>`;
+                    return;
+                }
+
+                // 渲染搜索结果列表
+                let html = `<div class="list-header"><h2>搜索结果</h2><p class="page-indicator">找到 ${results.length} 篇文章</p></div><ul id="article-list">`;
+                results.forEach(item => {
+                    html += `
+                        <li>
+                            <a href="?post=${encodeURIComponent(item.file)}" onclick="document.getElementById('search-input').value=''; BlogCore.init();">
+                                <strong>${BlogCore.escapeHTML(item.title)}</strong>
+                                ${item.author ? `<span style="color:var(--text-tertiary);font-size:0.85em;"> — ${BlogCore.escapeHTML(item.author)}</span>` : ''}
+                                ${item.date ? `<span style="color:var(--text-tertiary);font-size:0.85em;"> · ${BlogCore.escapeHTML(item.date)}</span>` : ''}
+                                <div style="font-size:0.88rem;color:var(--text-secondary);margin-top:6px;">${item.snippet}</div>
+                            </a>
+                        </li>`;
+                });
+                html += `</ul>`;
+                app.innerHTML = html;
+            }
+
+            // 创建搜索栏 UI（玻璃拟态，融入现有风格）
+            function createSearchBar() {
+                const header = document.querySelector('.site-header');
+                if (!header) return;
+
+                const container = document.createElement('div');
+                container.className = 'search-bar-container';
+                container.style.cssText = `
+                    position: relative; z-index: 2; width: 100%; max-width: var(--max-content-width); margin: 0 auto 18px;
+                `;
+                container.innerHTML = `
+                    <div style="
+                        background: rgba(255,255,255,0.55); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%);
+                        border: 1px solid rgba(255,255,255,0.5); border-radius: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04);
+                        display: flex; align-items: center; padding: 0 16px;
+                    ">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="search-input" placeholder="搜索文章标题或内容..." autocomplete="off" style="
+                            flex:1; border:none; background:transparent; padding: 12px 12px; font-size:0.95rem; color:var(--text-primary);
+                            outline:none; font-family:inherit; letter-spacing:0.01em;
+                        ">
+                        <button id="search-clear" style="
+                            background:none; border:none; cursor:pointer; padding:4px; display:none; color:var(--text-tertiary);
+                        ">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(container, header.nextSibling);
+
+                const input = document.getElementById('search-input');
+                const clearBtn = document.getElementById('search-clear');
+
+                input.addEventListener('input', debounce(async (e) => {
+                    const val = e.target.value;
+                    if (val.trim() !== '') {
+                        clearBtn.style.display = 'block';
+                        await performSearch(val);
+                    } else {
+                        clearBtn.style.display = 'none';
+                        BlogCore.init();
+                    }
+                }));
+
+                clearBtn.addEventListener('click', () => {
+                    input.value = '';
+                    clearBtn.style.display = 'none';
+                    BlogCore.init();
+                });
+            }
+
+            // 页面就绪后挂载搜索栏
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', createSearchBar);
+            } else {
+                createSearchBar();
+            }
+        })();
+    </script>
+</body>
+</html>
