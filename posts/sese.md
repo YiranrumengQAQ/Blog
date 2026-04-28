@@ -32,8 +32,6 @@ date: 2026-04-28
 
 # 涩涩
 
-这里是正文部分。通过 HTML 补丁，我们给下面的图片增加了一个带有渐变底色和白色内边的双重边框。
-
 <div class="custom-img-container">
     <img src="https://i.ibb.co/0pVx48rk/IMG-20260301-223158.jpg" alt="涩涩图片">
 </div>
