@@ -1,13 +1,9 @@
 ---
-title: 我的第一篇博客
-author: Yiranrumengqaq
+title: 哈喽
+author: YiranrumengQAQ
 date: 2026-04-28
 ---
 
-# 欢迎来到我的博客
-这是我利用 Gemini 和 DeepSeek 搭建的纯前端博客。
+我滴宝宝
 
-### 为什么这个博客很酷？
-- **零成本**：托管在 GitHub Pages。
-- **极轻量**：没有数据库，只有 Markdown。
-- **玻璃拟态**：UI 非常漂亮。
+![宝宝图片](https://i.ibb.co/Z6WxY5kW/IMG-20260428-124149-255.jpg)
