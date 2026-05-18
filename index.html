@@ -1292,8 +1292,8 @@
     <!-- Header -->
     <header class="site-header" id="siteHeader">
         <div class="header-inner">
-            <a class="blog-name" href="#/" title="猫猫和主人的回忆 - 首页">
-                猫猫和主人的回忆
+            <a class="blog-name" href="#/" title="猫猫的回忆 - 首页">
+                猫猫的回忆
             </a>
             <div class="header-actions">
                 <div class="search-wrap" id="searchWrap">
@@ -1869,7 +1869,7 @@
                 try {
                     const post = await blog.getPostDetail(slug);
                     loadingSkeleton.style.display = 'none';
-                    document.title = `${escapeHTML(post.title)} - 猫猫和主人的回忆`;
+                    document.title = `${escapeHTML(post.title)} - 猫猫的回忆`;
 
                     const coverHTML = post.coverImage ?
                         `<img src="${escapeAttr(post.coverImage)}" alt="${escapeAttr(post.title)}" class="article-cover-full" onerror="this.style.display='none';">` :
